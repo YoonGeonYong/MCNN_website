@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+<body>
+    <form method="POST" enctype="multipart/form-data">
+        <input type="file" name="file">
+        <input type="submit" value="Upload">
+    </form>
+    {% if filename1 and filename2 %}
+        <h2>Uploaded Image</h2>
+        <img src="{{ url_for('send_file', filename=filename1) }}">
+        <h2>Model Output</h2>
+        <img src="{{ url_for('send_file', filename=filename2) }}">
+    {% endif %}
+</body>
+</html>
