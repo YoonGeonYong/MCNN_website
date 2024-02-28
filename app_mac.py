@@ -3,8 +3,8 @@ import os
 import cv2
 import numpy as np
 import torch
-from matplotlib import pyplot as plt
 import matplotlib
+from matplotlib import pyplot as plt
 matplotlib.use('Agg')
 
 from model import Conv2d, MCNN
