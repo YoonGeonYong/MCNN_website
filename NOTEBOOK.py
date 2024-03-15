@@ -1,79 +1,144 @@
-# Flask 라이브러리 import
-from flask import Flask, render_template, request, send_from_directory
-
-# OS, OpenCV, Numpy 라이브러리 import
-import os
-import cv2
-import numpy as np
-
-# PyTorch 라이브러리 import
 import torch
+import torch.nn as nn
+from pytorch_lightning import LightningModule, Trainer
 
-# matplotlib 라이브러리 import
-import matplotlib
-from matplotlib import pyplot as plt
+class Conv2d(nn.Module):
+    def __init__(self, in_channels, out_channels, kernel_size, \
+                stride=1, NL='relu', same_padding=False, bn=False, dilation=1):
+        super(Conv2d, self).__init__()
+        padding = int((kernel_size - 1) // 2) if same_padding else 0
+        self.conv = []
+        if dilation==1:
+            self.conv = nn.Conv2d(in_channels, out_channels, kernel_size, stride, padding=padding, dilation=dilation)
+        else:
+            self.conv = nn.Conv2d(in_channels, out_channels, kernel_size, stride, padding=dilation, dilation=dilation)
+        self.bn = nn.BatchNorm2d(out_channels, eps=0.001, momentum=0, affine=True) if bn else nn.Identity()
+        if NL == 'relu' :
+            self.relu = nn.ReLU(inplace=True)
+        elif NL == 'prelu':
+            self.relu = nn.PReLU()
+        else:
+            self.relu = None
 
-# 모델 불러오기 (Conv2d, MCNN 클래스 정의되어 있어야 함)
-from model import Conv2d, MCNN
+    def forward(self, x):
+        x = self.conv(x)
+        if self.bn is not None:
+            x = self.bn(x)
+        if self.relu is not None:
+            x = self.relu(x)
+        return x
+    
 
-# 데이터셋 클래스 및 데이터 증강 함수 불러오기 (MyDataset 클래스, aug_train, aug_val 함수 정의되어 있어야 함)
-from MYDataset import MyDataset, aug_train, aug_val
+class MCNN(LightningModule):
+    '''
+    Multi-column CNN 
+        -Implementation of Single Image Crowd Counting via Multi-column CNN (Zhang et al.)
+    '''
+    
+    def __init__(self, lr, max_steps, bn=False):
+    
+        super(MCNN, self).__init__()
+        
+        self.save_hyperparameters() # self.hparam을 사용하게 해줌; model에 입력받은 args
+        self.use = 0    # default : MCNN 전체
+        self.lr = lr
+        self.max_steps = max_steps
+        self.crit = nn.MSELoss()
+        
+        self.branch1 = nn.Sequential(Conv2d( 1, 16, 9, same_padding=True, bn=bn),
+                                     nn.MaxPool2d(2),
+                                     Conv2d(16, 32, 7, same_padding=True, bn=bn),
+                                     nn.MaxPool2d(2),
+                                     Conv2d(32, 16, 7, same_padding=True, bn=bn),
+                                     Conv2d(16,  8, 7, same_padding=True, bn=bn))
+        
+        self.branch2 = nn.Sequential(Conv2d( 1, 20, 7, same_padding=True, bn=bn),
+                                     nn.MaxPool2d(2),
+                                     Conv2d(20, 40, 5, same_padding=True, bn=bn),
+                                     nn.MaxPool2d(2),
+                                     Conv2d(40, 20, 5, same_padding=True, bn=bn),
+                                     Conv2d(20, 10, 5, same_padding=True, bn=bn))
+        
+        self.branch3 = nn.Sequential(Conv2d( 1, 24, 5, same_padding=True, bn=bn),
+                                     nn.MaxPool2d(2),
+                                     Conv2d(24, 48, 3, same_padding=True, bn=bn),
+                                     nn.MaxPool2d(2),
+                                     Conv2d(48, 24, 3, same_padding=True, bn=bn),
+                                     Conv2d(24, 12, 3, same_padding=True, bn=bn))
+        
+        self.fuse = nn.Sequential(Conv2d( 30, 1, 1, same_padding=True, bn=bn))
+        
+        self.out1 = nn.Sequential(Conv2d( 8, 1, 1, same_padding=True, bn=bn))
+        self.out2 = nn.Sequential(Conv2d( 10, 1, 1, same_padding=True, bn=bn))
+        self.out3 = nn.Sequential(Conv2d( 12, 1, 1, same_padding=True, bn=bn))
+        
+        self.crit = nn.MSELoss()
+        
+    def forward(self, im_data):
+        im_data = im_data.unsqueeze(1)
+        x1 = self.branch1(im_data)
+        x2 = self.branch2(im_data)
+        x3 = self.branch3(im_data)
+        
+        
+        if self.use == 0:
+            x = torch.cat((x1,x2,x3),1)
+            x = self.fuse(x)
+        elif self.use == 1:
+            x = self.out1(x1)
+        elif self.use == 2:
+            x = self.out2(x2)
+        elif self.use == 3:
+            x = self.out3(x3)
+        
+        return x.squeeze(1)
+    
+    
+    def training_step(self, batch, batch_idx):
+        self.train()
+        x, y = batch
+        
+        pred = self(x)
+        loss = self.crit(pred, y)
+        
+        pred_sum = torch.round(pred.sum(dim=(1,2))).int()
+        gt_sum = torch.round(y.sum(dim=(1,2))).int()
+        acc = (pred_sum == gt_sum).float().mean()
+        
+        mae = torch.abs(pred_sum - gt_sum).float().mean()
+        
+        self.log('train_loss', loss)
+        self.log('train_acc', acc)
+        self.log('train_mae', mae)
+        
+        return loss
+        
+    def validation_step(self, batch, batch_idx):
+        with torch.no_grad():
+            self.eval()
+            x, y = batch
+            
+            pred = self(x)
+            loss = self.crit(pred, y)
+        
+            pred_sum = torch.round(pred.sum(dim=(1,2))).int()
+            gt_sum = torch.round(y.sum(dim=(1,2))).int()
+            acc = (pred_sum == gt_sum).float().mean()
 
-# train-test split 함수 불러오기
-from sklearn.model_selection import train_test_split
-
-# Flask 앱 설정
-app = Flask(__name__)
-app.config['UPLOAD_FOLDER'] = 'uploads/'  # 업로드 폴더 설정
-
-# 파일 업로드 처리 함수
-@app.route('/', methods=['GET', 'POST'])
-def upload_file():
-    if request.method == 'POST':
-        # 업로드된 파일 처리
-        file = request.files['file']
-        filename = os.path.join(app.config['UPLOAD_FOLDER'], 'uploaded_image.png')
-        file.save(filename)
-
-        # 업로드된 이미지 읽기
-        im = cv2.imread(filename, cv2.IMREAD_COLOR)
-        im = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)  # BGR -> 그레이스케일 변환
-
-        # 이미지를 float형으로 변환하고 0~1 사이의 값으로 정규화
-        im = im.astype(np.float32) / 255.0
-
-        # 이미지를 PyTorch 텐서로 변환하고 배치 차원 추가
-        im_tensor = torch.from_numpy(im).unsqueeze(0)
-
-        # 모델 불러오기
-        model = MCNN(3e-4)
-        model.load_state_dict(torch.load('mcnn_model.pth'))
-
-        # 모델 예측
-        output = model(im_tensor)
-
-        # 예측 결과 텐서 분리 및 배치 차원 제거
-        output_image = output.detach().squeeze(0)
-
-        # --- 웹페이지에 시각화 결과 출력하기 위한 코드 추가 ---
-        plt.figure(figsize=(6, 6))
-        plt.imshow(output_image_np)  # 예측 결과 이미지 출력 (output_image_np 변수는 아직 정의되지 않았음)
-        plt.title('모델 예측 결과')
-
-        # 시각화 결과를 임시 이미지 파일로 저장 (실제 웹 환경에서는 필요하지 않음)
-        plt.savefig(os.path.join(app.config['UPLOAD_FOLDER'], 'model_output.png'))
-
-        # 업로드 이미지와 예측 결과 이미지를 함께 템플릿에 전달
-        return render_template('index.html', filename1='uploaded_image.png', filename2='temp_output.png')
-
-    # 파일 업로드 화면 제공
-    return render_template('index.html')
-
-# 업로드된 파일 반환 함수
-@app.route('/uploads/<filename>')
-def send_file(filename):
-    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
-
-# 프로그램 실행 (flask 실행)
-if __name__ == '__main__':
-    app.run(debug=True)
+            mae = torch.abs(pred_sum - gt_sum).float().mean()
+            
+            self.log('val_loss', loss)
+            self.log('val_acc', acc)
+            self.log('val_mae', mae)
+            
+            
+    def configure_optimizers(self):
+        optimizer = torch.optim.AdamW(self.parameters(), lr=self.lr, weight_decay=1e-4)
+        
+        scheduler = {
+            'scheduler': torch.optim.lr_scheduler.OneCycleLR(optimizer, max_lr=self.lr, total_steps=self.hparams.max_steps, pct_start=0.1, cycle_momentum=False),
+            'interval': 'step',
+            'frequency': 1
+        }
+        
+        return [optimizer], [scheduler]

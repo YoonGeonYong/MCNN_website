@@ -34,7 +34,11 @@ def upload_file():
 
         # 모델 불러오기
         model = MCNN(3e-4)
-        model.load_state_dict(torch.load('mcnn_model.pth'))
+        # model.load_state_dict(torch.load('mcnn_model.pth'))
+        model.load_state_dict(torch.load('server_model_weights_round_1.pth'))
+        
+        
+        
         
         # 모델 예측
         output = model(im_tensor)
