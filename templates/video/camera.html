@@ -1,0 +1,12 @@
+{% extends 'element/base.html' %}
+{% block content %}
+<h1>Camera</h1>
+<div class="box alt">
+	<div class="row gtr-uniform">
+		<div class="col-8"><span class="image fit"><img src="{{ url_for('video.send_stream') }}"></span></div>		
+		<div class="col-4"><span class="image fit"><img src="{{ url_for('image.send_file', filename=v_img) }}" alt="" /></span></div>
+		<div class="col-8"></div> <!-- 공백 -->
+		<h2>density : </h2>
+	</div>
+</div>
+{% endblock %}

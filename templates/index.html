@@ -1,15 +1,51 @@
-<!DOCTYPE html>
-<html>
-<body>
-    <form method="POST" enctype="multipart/form-data">
-        <input type="file" name="file">
-        <input type="submit" value="Upload">
-    </form>
-    {% if filename1 and filename2 %}
-        <h2>Uploaded Image</h2>
-        <img src="{{ url_for('send_file', filename=filename1) }}">
-        <h2>Model Output</h2>
-        <img src="{{ url_for('send_file', filename=filename2) }}">
-    {% endif %}
-</body>
-</html>
+{% extends "element/base.html" %}
+{% block content %}
+<header>
+	<h1>
+		This is <u>Crowded</u></br>
+		a system of Crowd Monitoring, Analysis
+	</h1>
+	<p>
+		It's also known as <i>"Crowd Counting"</i></br>
+		which enables <u>real-time monitoring</u> for immediate response, and <u>time-series data analysis</u> for long-term response
+	</p>
+</header>
+<section class="tiles">
+	<article class="style2">
+		<span class="image">
+			<img src="static/images/pic01.jpg" alt="" />
+		</span>
+		<a href="{{ url_for('video.show_stream_code') }}">
+			<h2>Video Streaming</h2>
+			<div class="content">
+				<p>Streaming the video</br> 
+					you wants to monitor and analyze</p>
+			</div>
+		</a>
+	</article>
+	<article class="style3">
+		<span class="image">
+			<img src="static/images/pic01.jpg" alt="" />
+		</span>
+		<a href="{{ url_for('video.show_list') }}">
+			<h2>Video List</h2>
+			<div class="content">
+				<p>Showing the videos</br>
+					that monitored and analyzed</p>
+			</div>
+		</a>
+	</article>
+	<article class="style6">
+		<span class="image">
+			<img src="static/images/pic01.jpg" alt="" />
+		</span>
+		<a href="{{ url_for('image.upload_file') }}">
+			<h2>Image Conversion</h2>
+			<div class="content">
+				<p>Converting image</br>
+					into depth-map and analyzing</p>
+			</div>
+		</a>
+	</article>
+</section>
+{% endblock %}

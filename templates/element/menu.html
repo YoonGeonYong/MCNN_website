@@ -1,0 +1,13 @@
+<h2>Menu</h2>
+<ul>
+    <li><a href="{{ url_for('main.index') }}">Home</a></li>
+    <li>
+        <a href="{{ url_for('video.show_stream_code') }}">Video Streaming</a>
+        <a href="{{ url_for('video.show_list') }}">Video List</a>
+    </li>
+    <li>
+        <a href="{{ url_for('info.intro_website') }}">Web Site</a>
+        <a href="{{ url_for('info.intro_model') }}">Model</a>
+        <a href="{{ url_for('info.intro_developers') }}">Developers</a>
+    </li>
+</ul>

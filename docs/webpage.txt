@@ -1,0 +1,46 @@
+< html list >
+
+/               index.html
+/info
+    /web        info/webpage.html
+    /model      info/model.html
+    /dev        info/developers.html
+/video
+    /stream     video/stream_code.html
+    /list       video/list.html
+    /cam        video/camera.html
+    /stat       video/statistic.html
+
+
+
+< index.html >
+ß
+Crowded, 군중 모니터링, 탐지, 분석
+해당 시스템은 즉각적인 대응을 위한 실시간 모니터링, 장기적인 대응을 위한 시계열 데이터 분석를 수행함
+| Crowded, a system of Crowd Monitoring, Analysis
+| Real-time monitoring for immediate response, and time-series data analysis for long-term response.
+
+영상 전송(스트리밍)
+군중 밀집도를 모니터링, 분석할 영상을 스트리밍
+| Video Streaming
+| Streaming the video you wants to monitor and analyze crowd density.
+
+영상 목록
+실시간으로 모니터링, 분석되는 영상들을 확인
+| Video List
+| Showing the videos that monitored and analyzed in real-time
+
+정보
+추가적인 웹 사이트, 모델, 개발자 정보 확인
+| information
+| Additional information about websites, models, and developer
+
+
+
+< video/stream_code.html > 약간 readme.md 느낌으로
+영상 스트리밍
+실시간 영상 스트리밍을 위해서 아래의 코드를 수행
+| Video streaming (for client)
+| Run the code for video streaming
+
+코드
