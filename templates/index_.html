@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-time Crowd Counting</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.3/socket.io.js"></script>
+</head>
+<body>
+    <h1>Real-time Crowd Counting</h1>
+    <video id="video" width="640" height="480" autoplay></video>
+    <canvas id="canvas" width="640" height="480" style="display: none;"></canvas>
+    <img id="result" alt="Result" width="640" height="480"/>
+
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const context = canvas.getContext('2d');
+        const result = document.getElementById('result');
+
+        const socket = io();
+
+        // Start video stream
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(stream => {
+                video.srcObject = stream;
+            })
+            .catch(err => {
+                console.error('Error accessing camera: ', err);
+            });
+
+        // Capture image and send to server at intervals
+        function captureAndSend() {
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const dataURL = canvas.toDataURL('image/jpeg');
+            socket.emit('image', dataURL.split(',')[1]); // Send base64 without header
+        }
+
+        // Update result image on response from server
+        socket.on('response', data => {
+            result.src = 'data:image/jpeg;base64,' + data.image;
+        });
+
+        // Capture image every second
+        setInterval(captureAndSend, 1000);
+    </script>
+</body>
+</html>

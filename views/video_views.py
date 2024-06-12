@@ -1,69 +1,61 @@
-from flask import Blueprint, Response, request, render_template
+from flask import Blueprint, Response, request, render_template, current_app, jsonify
 import os
 import cv2
 import numpy as np
+import pandas as pd
 import torch
+from influxdb_client_3 import Point
+import threading
+import database
+import model as m
+from datetime import datetime, timedelta, timezone
 
-# app factory에서 db 만들고 불러오기
-from influxdb_client_3 import InfluxDBClient3, Point
-host = os.environ.get("INFLUXDB_HOST")
-token = os.environ.get("INFLUXDB_TOKEN")
-org = os.environ.get("INFLUXDB_TOKEN")
-
-client = InfluxDBClient3(host=host, token=token, org=org)
-database="density"
-##
-
-from mcnn.model import MCNN
-
-# 모델 불러오기
-model = MCNN(3e-4)
-model.load_state_dict(torch.load('mcnn/mcnn_trained.pth'))
-
-cap = cv2.VideoCapture(0)
 
 bp = Blueprint('video', __name__, url_prefix='/video')
+
+
+# cap = cv2.VideoCapture(0)
 
 @bp.route('/stream_code')
 def show_stream_code():
     return render_template('video/stream_code.html')
 
-@bp.route('/stream')
-def send_stream():
-    def generate_frames():
-        while True:
-            ret, frame = cap.read()  # read frame
-            if not ret:
-                break
-            else:
-                gray = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
-                _, encoded = cv2.imencode('.jpg', gray, params=[cv2.IMWRITE_JPEG_QUALITY, 20])
-                byted = encoded.tobytes()
+# @bp.route('/stream')
+# def send_stream():
+#     model = m.get_model(current_app)
+#     db = database.get_db(current_app)
 
-                ############## 모델 적용 -> imwrite ###########
-                # 내부적으로 저장하고, 영상은 그냥 보여주기
-                img_arr = np.fromstring(byted, np.int8)
-                img = cv2.imdecode(img_arr, cv2.IMREAD_GRAYSCALE)
-                # model 적용
-                img_f = img.astype(np.float32) / 255.0
-                img_f = torch.from_numpy(img_f).unsqueeze(0)
-                out_tens = model(img_f)
-                out_tens = out_tens.detach().squeeze(0)
-                out_arr = out_tens.cpu().numpy()
+#     def generate_frames():
+#         while True:
+#             ret, frame = cap.read()  # read frame
+#             if not ret:
+#                 break
+#             else:
+#                 # gray = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
+#                 _, encoded = cv2.imencode('.jpg', frame, params=[cv2.IMWRITE_JPEG_QUALITY, 20])
+#                 byted = encoded.tobytes()
 
-                theta = 30
-                out_img = out_arr * 255 * theta
-                cv2.imwrite('upload/v_output.jpg', out_img)
-                ##########################################
-                ########### db ##############
-                tmp1 = int(np.max(out_img))
-                tmp2 = int(np.min(out_img))
-
-                client.write(database=database, record=Point('test').tag('max', tmp1).field('min', tmp2))
-                ##################################
-                yield (b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' + byted + b'\r\n') # return frame
+#                 cnt, den = counting(model, frame)
+#                 inserting(db, cnt, den)
+#                 # img_arr = np.fromstring(byted, np.int8)
+#                 # img = cv2.imdecode(img_arr, cv2.IMREAD_GRAYSCALE)
+                
+                
+#                 yield (b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' + byted + b'\r\n') # return frame
             
-    return Response(generate_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
+#     return Response(generate_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
+
+# def counting(model, img):
+#     dm = model.density_map(img)
+#     x, y = model.density_point(dm)
+#     den = model.density(dm)
+
+#     return len(x), den
+
+# def inserting(db, count, density):
+#     point = Point('crowd_density').tag('id', 'galmel').field('count', count).field('density', density)
+#     db.write(record=point)
+
 
 @bp.route('/list')
 def show_list():
@@ -71,20 +63,44 @@ def show_list():
 
 @bp.route('/<int:id>/cam')
 def show_camera(id):
-    return render_template('video/camera.html', id=id, v_img='v_output.jpg')
+    return render_template('video/camera.html')
 
-@bp.route('/<int:id>/stat')
-def show_statistic(id):
-    # data select
+@bp.route('/statistics')
+def statistic():
+    return render_template('video/statistics.html')
+
+def convert_to_kst_and_format(utc_time):
+    utc_time = utc_time.split('.')[0]  # Remove microseconds
+    utc_dt = datetime.strptime(utc_time, '%Y-%m-%d %H:%M:%S')
+    kst_dt = utc_dt.replace(tzinfo=timezone.utc).astimezone(timezone(timedelta(hours=9)))
+    return kst_dt.strftime('%Y%m.%d.%H.%M')
+
+@bp.route('/stat')
+def get_data():
+    db = database.get_db(current_app)
+    
     query = """SELECT *
-    FROM 'test'
-    WHERE time >= now() - interval '1 hours'
-    AND ('bees' IS NOT NULL OR 'ants' IS NOT NULL)"""
+    FROM crowd_density
+    WHERE time >= now() - INTERVAL '1 hour'
+    AND (count IS NOT NULL OR density IS NOT NULL)"""
 
-    # Execute the query
-    table = client.query(query=query, database="density", language='sql')
-
-    # Convert to dataframe
-    df = table.to_pandas().sort_values(by="time")
-    print(df)
-    return render_template('video/statistic.html', id=id)
+    table = db.query(query=query, language='sql')
+    df = table.to_pandas()  # pd.DataFrame 변환
+    
+    df['time'] = pd.to_datetime(df['time'])  # Ensure 'time' column is in datetime format
+    df = df.sort_values(by="time", ascending=True)  # Sort by 'time' column in ascending order
+    
+    data = {
+        'count': df['count'].tolist(),
+        'density': df['density'].tolist(),
+        'id': df['id'].tolist(),
+        'timestamp': df['time'].astype(str).tolist()
+    }
+    kst_timestamps = [convert_to_kst_and_format(ts) for ts in data['timestamp']]
+    modified_data = {
+        "count": data["count"],
+        "density": data["density"],
+        "id": data["id"],
+        "timestamp": kst_timestamps
+    }
+    return jsonify(modified_data)

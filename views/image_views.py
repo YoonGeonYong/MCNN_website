@@ -1,13 +1,9 @@
-from flask import Blueprint, request, render_template, send_from_directory, make_response, Response
+from flask import Blueprint, request, render_template, send_from_directory, make_response, Response, current_app
 import numpy as np
 import cv2
 import matplotlib.pyplot as plt
-import torch
-from mcnn.model import MCNN
-
-# 모델 불러오기
-model = MCNN(3e-4)
-model.load_state_dict(torch.load('mcnn/mcnn_trained.pth'))
+import io
+import model as m
 
 bp = Blueprint('image', __name__, url_prefix='/image')
 
@@ -16,29 +12,37 @@ def upload_file():
     if request.method == 'POST':
 
         # 원본 파일
-        img_byte = request.files['file'].read()             # bytes
-        if len(img_byte) == 0:                              # img가 없을경우 다시 입력화면으로
+        img_byte = request.files['file'].read()  # bytes
+        if len(img_byte) == 0:  # img가 없을경우 다시 입력화면으로
             return render_template('image/image.html')
-        img_arr = np.fromstring(img_byte, np.int8)          # bytes -> ndarray
-        img = cv2.imdecode(img_arr, cv2.IMREAD_GRAYSCALE)   # cv2 변환
+        
+        img_arr = np.frombuffer(img_byte, np.int8)  # bytes -> ndarray
+        img = cv2.imdecode(img_arr, cv2.IMREAD_GRAYSCALE)  # cv2 변환
 
-        cv2.imwrite('upload/input.jpg', img) # 원본 저장
+        cv2.imwrite('upload/input.jpg', img)  # 원본 저장
 
         # model 적용
-        img_f = img.astype(np.float32) / 255.0              # [0,1]로 정규화
-        img_f = torch.from_numpy(img_f).unsqueeze(0)        # batch_size 차원 추가 : (h, w) -> (1, h, w)
-        out_tens = model(img_f)
-        out_tens = out_tens.detach().squeeze(0)             # batch_size 차원 제거 : (1, h, w) -> (h, w)
-        out_arr = out_tens.cpu().numpy()                    # tensor -> ndarray
-        
-        theta = 17
-        out_img = out_arr * 255 * theta                     # [0~255] 변환 * theta (값이 너무 작아서 안보임)
-        # print(out_img)
-        # print(np.max(out_img), np.min(out_img))
+        model = m.get_model(current_app)
+        dm = model.density_map(img)
+        x, y = model.density_point(dm)
+        den = model.density(dm)
 
-        cv2.imwrite('upload/output.jpg', out_img) # 결과물 저장
+        # matplotlib를 사용하여 이미지 저장
+        plt.imshow(dm)
+        plt.axis('off')
 
-        return render_template('image/image.html', in_img='input.jpg', out_img='output.jpg')
+        # 이미지 저장을 위한 버퍼 생성
+        buf = io.BytesIO()
+        plt.savefig(buf, format='jpg', bbox_inches='tight', pad_inches=0)
+        buf.seek(0)
+
+        # 버퍼 내용을 파일로 저장
+        with open('upload/output.jpg', 'wb') as f:
+            f.write(buf.getvalue())
+
+        buf.close()
+
+        return render_template('image/image.html', in_img='input.jpg', out_img='output.jpg', num=len(x), density=den)
 
     # GET : 업로드 화면
     return render_template('image/image.html')

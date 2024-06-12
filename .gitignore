@@ -1,1 +1,4 @@
 init.sh
+
+.py
+*.cpython-39.pyc

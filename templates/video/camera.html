@@ -1,12 +1,66 @@
 {% extends 'element/base.html' %}
 {% block content %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.3/socket.io.js"></script>
+
 <h1>Camera</h1>
 <div class="box alt">
-	<div class="row gtr-uniform">
-		<div class="col-8"><span class="image fit"><img src="{{ url_for('video.send_stream') }}"></span></div>		
-		<div class="col-4"><span class="image fit"><img src="{{ url_for('image.send_file', filename=v_img) }}" alt="" /></span></div>
-		<div class="col-8"></div> <!-- 공백 -->
-		<h2>density : </h2>
-	</div>
+    <div class="row gtr-uniform">
+        <div class="col-8">
+            <span class="image fit">
+                <video id="video" autoplay></video>
+            </span>
+        </div>
+        <div class="col-8">
+            <img id="result" alt="Result"/>
+            <h2>Count: <span id="count">N/A</span></h2>
+            <h2>Density: <span id="density">N/A</span></h2>
+        </div>
+    </div>
+    
+    <canvas id="canvas" width="640" height="480" style="display: none;"></canvas>
+
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const context = canvas.getContext('2d');
+        const result = document.getElementById('result');
+        const countElement = document.getElementById('count');
+        const densityElement = document.getElementById('density');
+
+        const socket = io();
+
+        // Start video stream
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(stream => {
+                video.srcObject = stream;
+                socket.emit('start_stream');
+            })
+            .catch(err => {
+                console.error('Error accessing camera: ', err);
+            });
+
+        // Capture image and send to server at intervals
+        function captureAndSend() {
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const dataURL = canvas.toDataURL('image/jpeg');
+            socket.emit('image', dataURL.split(',')[1]); // Send base64 without header
+        }
+
+        // Update result image and statistics on response from server
+        socket.on('response', data => {
+            result.src = 'data:image/jpeg;base64,' + data.image;
+            countElement.textContent = data.count;
+            densityElement.textContent = data.density.toFixed(2);
+        });
+
+        // Capture image every second
+        const interval = setInterval(captureAndSend, 1000);
+
+        // Stop the stream and DB recording when the page is unloaded
+        window.addEventListener('beforeunload', () => {
+            clearInterval(interval);
+            socket.emit('stop_stream');
+        });
+    </script>
 </div>
 {% endblock %}

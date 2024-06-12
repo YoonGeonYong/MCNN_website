@@ -1,0 +1,78 @@
+{% extends 'element/base.html' %}
+{% block content %}
+
+<h1>Statistic</h1>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<h1>Statistic</h1>
+<canvas id="myChart" width="400" height="200"></canvas>
+<script>
+    var ctx = document.getElementById('myChart').getContext('2d');
+    var chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Crowd Count',
+                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                borderColor: 'rgba(75, 192, 192, 1)',
+                data: [],
+                yAxisID: 'count'
+            },
+            {
+                label: 'Crowd Density',
+                backgroundColor: 'rgba(192, 75, 75, 0.2)',
+                borderColor: 'rgba(192, 75, 75, 1)',
+                data: [],
+                yAxisID: 'density'
+            }]
+        },
+        options: {
+            scales: {
+                yAxes: [{
+                    id: 'count',
+                    type: 'linear',
+                    position: 'left',
+                    ticks: {
+                        beginAtZero: true
+                    },
+                    scaleLabel: {
+                        display: true,
+                        labelString: 'Count'
+                    }
+                }, {
+                    id: 'density',
+                    type: 'linear',
+                    position: 'right',
+                    ticks: {
+                        beginAtZero: true
+                    },
+                    scaleLabel: {
+                        display: true,
+                        labelString: 'Density'
+                    }
+                }]
+            }
+        }
+    });
+
+    function updateChart() {
+        $.getJSON('/video/stat', function(data) {
+            var labels = data.timestamp;
+            var countData = data.count;
+            var densityData = data.density;
+
+            chart.data.labels = labels;
+            chart.data.datasets[0].data = countData;
+            chart.data.datasets[1].data = densityData;
+            chart.update();
+        });
+    }
+
+    setInterval(updateChart, 5000);  // 5초마다 차트 업데이트
+    updateChart();  // 페이지 로드 시 처음 차트 업데이트
+</script>
+
+
+{% endblock %}

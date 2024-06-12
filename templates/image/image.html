@@ -24,9 +24,9 @@
             <div class="col-4">
                 <h2>Ouput depth-map</h2>
                 <span class="image fit"><img src="{{ url_for('image.send_file', filename=out_img) }}"></span>
+                <h2>num : {{ num }}</h2>
+                <h2>density : {{ density }}</h2>
             </div>
-            <div class="col-8"></div> <!-- 공백 -->
-		    <h2>density : </h2>
         </div>
     </div>    
 {% endif %}
