@@ -21,7 +21,7 @@ def init_db(app):
     app.config['db_thread'] = None
 
 def get_db(app):
-    return app.config.get('db')
+    return app.config['db']
 
 # 데이터 저장
 # def insert_data(app, count, density):
