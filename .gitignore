@@ -1,5 +1,5 @@
-init.sh
+run.sh
 test/
 
-.py
-*.cpython-39.pyc
+.cpython-39.pyc
+__pycache__/
