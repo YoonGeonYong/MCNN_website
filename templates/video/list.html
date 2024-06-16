@@ -5,25 +5,27 @@
     <table>
         <thead>
             <tr>
+                <th>no</th>
                 <th>Id</th>
-                <th>Location</th>
                 <th>Camera</th>
                 <th>Statistic</th>
             </tr>
         </thead>
         <tbody>
-            <tr>
-                <td>1</td>
-                <td>Gamel</td>
-                <td><a href="/video/1/cam" class="button primary fit">click</a></td>
-                <td><a href="/video/statistics" class="button fit">click</a></td>
+            {% if id_list %}
+            {% for id in id_list %}
+            <tr class="text-center">
+                <td>{{ loop.index }}</td>
+                <td>{{ id }}</td>
+                <td><a href="/video/{{ id }}/cam" class="button primary fit">click</a></td>
+                <td><a href="/video/{{ id }}/statistics" class="button fit">click</a></td>
             </tr>
+            {% endfor %}
+            {% else %}
             <tr>
-                <td>2</td>
-                <td>Loc</td>
-                <td><a href="/video/2/cam" class="button primary fit">click</a></td>
-                <td><a href="/video/statistics" class="button fit">click</a></td>
+                <td colspan="4">No Data ()</td>
             </tr>
+            {% endif %}
         </tbody>
     </table>
 </div>

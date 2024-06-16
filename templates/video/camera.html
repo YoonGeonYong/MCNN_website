@@ -11,9 +11,20 @@
             </span>
         </div>
         <div class="col-8">
-            <img id="result" alt="Result"/>
-            <h2>Count: <span id="count">N/A</span></h2>
-            <h2>Density: <span id="density">N/A</span></h2>
+            <div id="input-section">
+                <input type="text" id="inputId" placeholder="Enter ID" />
+                <button id="startButton">Start</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="results" style="display: none;">
+        <div class="row gtr-uniform">
+            <div class="col-8">
+                <img id="result" alt="Result"/>
+                <h2>Count: <span id="count">N/A</span></h2>
+                <h2>Density: <span id="density">N/A</span></h2>
+            </div>
         </div>
     </div>
     
@@ -26,14 +37,18 @@
         const result = document.getElementById('result');
         const countElement = document.getElementById('count');
         const densityElement = document.getElementById('density');
+        const inputId = document.getElementById('inputId');
+        const startButton = document.getElementById('startButton');
+        const inputSection = document.getElementById('input-section');
+        const resultsDiv = document.getElementById('results');
 
-        const socket = io();
+        const socket = io('35.216.0.58:8080');
+        let interval;
 
         // Start video stream
         navigator.mediaDevices.getUserMedia({ video: true })
             .then(stream => {
                 video.srcObject = stream;
-                socket.emit('start_stream');
             })
             .catch(err => {
                 console.error('Error accessing camera: ', err);
@@ -43,7 +58,8 @@
         function captureAndSend() {
             context.drawImage(video, 0, 0, canvas.width, canvas.height);
             const dataURL = canvas.toDataURL('image/jpeg');
-            socket.emit('image', dataURL.split(',')[1]); // Send base64 without header
+            const id = inputId.value;
+            socket.emit('image', { image: dataURL.split(',')[1], id: id }); // Send base64 without header and id
         }
 
         // Update result image and statistics on response from server
@@ -53,13 +69,19 @@
             densityElement.textContent = data.density.toFixed(2);
         });
 
-        // Capture image every second
-        const interval = setInterval(captureAndSend, 1000);
+        // Start capturing images when ID is entered and button is clicked
+        startButton.addEventListener('click', () => {
+            if (inputId.value.trim() !== '') {
+                inputSection.style.display = 'none'; // Hide input section
+                resultsDiv.style.display = 'block'; // Show results section
+                interval = setInterval(captureAndSend, 1000);
+            }
+        });
 
         // Stop the stream and DB recording when the page is unloaded
         window.addEventListener('beforeunload', () => {
             clearInterval(interval);
-            socket.emit('stop_stream');
+            // socket.emit('stop_stream');
         });
     </script>
 </div>

@@ -1,7 +1,5 @@
 {% extends 'element/base.html' %}
 {% block content %}
-
-<h1>Statistic</h1>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
@@ -58,7 +56,7 @@
     });
 
     function updateChart() {
-        $.getJSON('/video/stat', function(data) {
+        $.getJSON('/video/{{id}}/stat', function(data) {
             var labels = data.timestamp;
             var countData = data.count;
             var densityData = data.density;
