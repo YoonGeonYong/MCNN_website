@@ -35,7 +35,7 @@ def test_db(id, count, density):
     return data
 
 # model test
-@bp.route('model/<int:num>')
+@bp.route('/model/<int:num>')
 def test_model(num):
     from flask import current_app
     import cv2

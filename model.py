@@ -35,30 +35,30 @@ class Crowded():
 
         return dm
     
+    # local maxima (maximum & median filter)
     def density_point(self, dm):
-        maxima = cv2.dilate(dm, None, iterations=3)
-        med = cv2.medianBlur(dm, ksize=3)
+        maxmask = cv2.dilate(dm, np.ones((3,3)), iterations=4)
+        medmask = cv2.medianBlur(dm, ksize=3)
 
-        maxmask = (dm == maxima)
-        medmask = (dm >= med + 0.02)
-        mask = maxmask & medmask
-
-        y, x = np.nonzero(mask)
+        maxima = (dm == maxmask)
+        med = (dm >= medmask + 0.025)
+        result = maxima & med
+        y, x = np.nonzero(result)
 
         return x, y
     
     def density(self, dm):
         nums = []
 
-        for i in range(2, 10):
+        for i in range(2, 7):
             kernel = np.ones((i, i))
-            maxima = cv2.dilate(dm, kernel, iterations=3)
-            med = cv2.medianBlur(dm, ksize=3)
+            maxmask = cv2.dilate(dm, kernel, iterations=3)
+            medmask = cv2.medianBlur(dm, ksize=3)
 
-            maxmask = (dm == maxima)
-            medmask = (dm >= med + 0.02)
-            mask = maxmask & medmask
-            y, x = np.nonzero(mask)
+            maxima = (dm == maxmask)
+            med = (dm >= medmask + 0.025)
+            result = maxima & med
+            y, x = np.nonzero(result)
 
             nums.append(len(y))
         diffs = np.diff(nums)

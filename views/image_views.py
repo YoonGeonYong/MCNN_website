@@ -1,9 +1,8 @@
-from flask import Blueprint, request, render_template, send_from_directory, make_response, Response, current_app
-import numpy as np
-import cv2
-import matplotlib.pyplot as plt
 import io
-import model as m
+import cv2
+import numpy as np
+import matplotlib.pyplot as plt
+from flask import Blueprint, request, render_template, send_from_directory, current_app #, Response
 
 bp = Blueprint('image', __name__, url_prefix='/image')
 
@@ -22,7 +21,7 @@ def upload_file():
         cv2.imwrite('upload/input.jpg', img)  # 원본 저장
 
         # model 적용
-        model = m.get_model(current_app)
+        model = current_app.config['model']
         dm = model.density_map(img)
         x, y = model.density_point(dm)
         den = model.density(dm)
@@ -53,20 +52,15 @@ def upload_file():
 def send_file(filename):
     return send_from_directory('upload/', filename)
 
-# @bp.route('/send')
-# def send_file(img):
-#     cv2.imread
-#     return Response(img, mimetype='image/jpeg')
-
 
 # 이미지 반환 테스트
-@bp.route('/')
-def show_img():
-    img_path = 'lena.jpeg'
+# @bp.route('/')
+# def show_img():
+#     img_path = 'lena.jpeg'
     
-    # img 인코딩
-    img = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)    # ndarray
-    _, encoded = cv2.imencode('.jpeg', img)             # jpeg (encoding)
-    byted = encoded.tobytes()                           # bytes
+#     # img 인코딩
+#     img = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)    # ndarray
+#     _, encoded = cv2.imencode('.jpeg', img)             # jpeg (encoding)
+#     byted = encoded.tobytes()                           # bytes
 
-    return Response(byted, mimetype='image/jpeg')
+#     return Response(byted, mimetype='image/jpeg')

@@ -1,10 +1,10 @@
-from io import BytesIO
 import cv2
+import numpy as np
+from matplotlib import pyplot as plt
+import base64
+from io import BytesIO
 from flask_socketio import SocketIO, emit
 from influxdb_client_3 import Point
-from matplotlib import pyplot as plt
-import numpy as np
-import base64
 
     
 def init_socketio(app):

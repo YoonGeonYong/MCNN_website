@@ -3,3 +3,4 @@ test/
 
 .cpython-39.pyc
 __pycache__/
+.DS_Store

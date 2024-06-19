@@ -6,9 +6,9 @@ from datetime import datetime, timedelta, timezone
 bp = Blueprint('video', __name__, url_prefix='/video')
 
 
-@bp.route('/stream_code')
-def show_stream_code():
-    return render_template('video/stream_code.html')
+@bp.route('/stream')
+def show_stream():
+    return render_template('video/stream.html')
 
 @bp.route('/list')
 def show_list():
@@ -27,9 +27,9 @@ def show_list():
 
 @bp.route('/<string:id>/cam')
 def show_camera(id):
-    return render_template('video/camera.html')
+    return render_template('video/camera.html', id=id)
 
-@bp.route('/<string:id>/statistics')
+@bp.route('/<string:id>/stat')
 def statistic(id):
     return render_template('video/statistics.html', id=id)
 
@@ -39,7 +39,7 @@ def convert_to_kst_and_format(utc_time):
     kst_dt = utc_dt.replace(tzinfo=timezone.utc).astimezone(timezone(timedelta(hours=9)))
     return kst_dt.strftime('%Y%m.%d.%H.%M')
 
-@bp.route('/<string:id>/stat')
+@bp.route('/<string:id>/data') # plot하기 위해서 데이터를 db에서 불러서 jsonify
 def get_data(id):
     db = current_app.config['db']
     
