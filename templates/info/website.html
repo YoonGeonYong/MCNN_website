@@ -1,18 +1,26 @@
 {% extends 'element/base.html' %}
 {% block content %}
 <h1>Web Site</h1>
-<h1>Crowded</h1>
-<blockquote>
-    Our website utilizes artificial intelligence to conduct real-time analysis of video streams, aiming to enhance safety measures and provide valuable insights for marketing strategies. 
-    By leveraging AI algorithms, we analyze live video feeds to accurately count the number of people within a given area, thereby assessing crowd density levels.
-</blockquote>
 <p>
-    The primary objective behind this initiative is to prevent disasters such as stampedes or overcrowding incidents by monitoring and managing crowd density in public spaces. 
-    By continuously monitoring crowd density in real-time, we can promptly identify and respond to situations where crowd density exceeds safe thresholds, enabling proactive measures to ensure public safety.
-    Moreover, our platform goes beyond safety concerns and extends its functionality to provide valuable marketing insights. 
-    By periodically measuring the number of people present in specific locations, we can generate meaningful data regarding foot traffic and crowd behavior patterns. 
-    This data can be utilized by businesses for strategic decision-making, such as optimizing operational hours to align with peak foot traffic periods or tailoring marketing campaigns to target high-traffic times.
-    In essence, our website serves as a multifaceted tool, combining the capabilities of AI-based crowd density analysis for disaster prevention with the generation of actionable data for marketing purposes. 
-    By fostering a safer environment and empowering businesses with valuable insights, we strive to contribute to both public safety and commercial success.
+    <strong>TSDB (InfluxDB)</strong><br>
+    Time Series DataBase, optimized for Time Series Data
+</p>
+<ol>
+    <li><strong>Speed</strong>: Time-Structured Merge Tree (TSM), Shard (memory)</li>
+    <li><strong>Space</strong>: Down sampling, Retention policy (auto deleting)</li>
+    <li><strong>Precision</strong>: micro-sec or nano-sec</li>
+</ol>
+
+<p>
+    <strong>Web Socket (socketio)</strong>
+</p>
+<ol>
+    <li><strong>Full-Duplex</strong>: Simultaneous Two-way communication (Client <-> Server)</li>
+    <li><strong>Low Latency</strong>: Persistent connection, without overhead (Handshakes)</li>
+</ol>
+
+<p>
+    <strong>GCP (Google Cloud Flatform)</strong><br>
+    Google Cloud Flatform, deploying ‘Crowded’ web server
 </p>
 {% endblock %}
