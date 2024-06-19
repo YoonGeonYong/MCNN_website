@@ -56,7 +56,7 @@
     });
 
     function updateChart() {
-        $.getJSON('/video/{{id}}/stat', function(data) {
+        $.getJSON('/video/{{ id }}/data', function(data) {
             var labels = data.timestamp;
             var countData = data.count;
             var densityData = data.density;
@@ -68,8 +68,8 @@
         });
     }
 
-    setInterval(updateChart, 5000);  // 5초마다 차트 업데이트
-    updateChart();  // 페이지 로드 시 처음 차트 업데이트
+    setInterval(updateChart, 2000); // 2초마다 업데이트
+    updateChart();                  // 페이지 로드 시, 업데이트
 </script>
 
 

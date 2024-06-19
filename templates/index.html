@@ -13,9 +13,9 @@
 <section class="tiles">
 	<article class="style2">
 		<span class="image">
-			<img src="static/images/pic01.jpg" alt="" />
+			<img src="{{ url_for('static', filename='images/blur.jpg') }}" alt="" />
 		</span>
-		<a href="{{ url_for('video.show_stream_code') }}">
+		<a href="{{ url_for('video.show_stream') }}">
 			<h2>Video Streaming</h2>
 			<div class="content">
 				<p>Streaming the video</br> 
@@ -25,7 +25,7 @@
 	</article>
 	<article class="style3">
 		<span class="image">
-			<img src="static/images/pic01.jpg" alt="" />
+			<img src="{{ url_for('static', filename='images/blur.jpg') }}" alt="" />
 		</span>
 		<a href="{{ url_for('video.show_list') }}">
 			<h2>Video List</h2>
@@ -37,7 +37,7 @@
 	</article>
 	<article class="style6">
 		<span class="image">
-			<img src="static/images/pic01.jpg" alt="" />
+			<img src="{{ url_for('static', filename='images/blur.jpg') }}" alt="" />
 		</span>
 		<a href="{{ url_for('image.upload_file') }}">
 			<h2>Image Conversion</h2>

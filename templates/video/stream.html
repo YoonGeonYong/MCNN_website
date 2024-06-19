@@ -1,0 +1,97 @@
+{% extends 'element/base.html' %}
+{% block content %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.3/socket.io.js"></script>
+
+<h1>Camera</h1>
+<div class="box alt">
+    <div class="row gtr-uniform">
+        <div class="col-8">
+            <span class="image fit">
+                <video id="video" autoplay playsinline></video>
+            </span>
+        </div>
+        <div class="col-7">
+            <div id="input-section" style="display: flex">
+                <input type="text" id="inputId" placeholder="Enter ID" style="flex: 1; margin-right: 20px;"/>
+                <button id="startButton">Enter</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="results" style="display: none;">
+        <div class="col-8">
+            <img id="result" alt="Result"/>
+            <h2>Count: <span id="count">-</span></h2>
+            <h2>Density: <span id="density">-</span></h2>
+        </div>
+    </div>
+    
+    <canvas id="canvas" width="640" height="480" style="display: none;"></canvas>
+</div>
+
+<script>
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const context = canvas.getContext('2d');
+    const result = document.getElementById('result');
+    const countElement = document.getElementById('count');
+    const densityElement = document.getElementById('density');
+    const inputId = document.getElementById('inputId');
+    const startButton = document.getElementById('startButton');
+    const inputSection = document.getElementById('input-section');
+    const resultsDiv = document.getElementById('results');
+
+    const socket = io(); // 'http://35.216.0.58:8080/'
+    let interval;
+
+    // Check if getUserMedia is supported
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        // Start video stream
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(stream => {
+                video.srcObject = stream;
+                console.log("Camera stream started successfully.");
+            })
+            .catch(err => {
+                console.error('Error accessing camera: ', err);
+            });
+    } else {
+        console.error('getUserMedia not supported on this browser.');
+        alert('Your browser does not support accessing the camera.');
+    }
+
+    // Capture image and send to server at intervals
+    function captureAndSend() {
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const dataURL = canvas.toDataURL('image/jpeg');
+        const id = inputId.value;
+        socket.emit('image', { image: dataURL.split(',')[1], id: id }); // Send base64 without header and id
+    }
+
+    // Update result image and statistics on response from server
+    socket.on('response', data => {
+        result.src = 'data:image/jpeg;base64,' + data.image;
+        countElement.textContent = data.count;
+        densityElement.textContent = data.density.toFixed(2);
+    });
+
+    // Start capturing images when ID is entered and button is clicked
+    startButton.addEventListener('click', () => {
+        if (inputId.value.trim() !== '') {
+            inputSection.style.display = 'none'; // Hide input section
+            resultsDiv.style.display = 'block'; // Show results section
+            interval = setInterval(captureAndSend, 1000);
+            console.log("Started capturing and sending images.");
+        } else {
+            alert("Please enter an ID");
+        }
+    });
+
+    // Stop the stream and DB recording when the page is unloaded
+    window.addEventListener('beforeunload', () => {
+        clearInterval(interval);
+        console.log("Stopped capturing and sending images.");
+        // socket.emit('stop_stream');
+    });
+</script>
+{% endblock %}
