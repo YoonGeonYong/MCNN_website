@@ -1,8 +1,8 @@
 import os
-from influxdb_client_3 import InfluxDBClient3, Point
-import threading
 import time
+import threading
 from flask import current_app
+from influxdb_client_3 import InfluxDBClient3, Point
 
 stop_event = threading.Event()
 global_data = {

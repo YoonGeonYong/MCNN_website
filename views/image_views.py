@@ -2,7 +2,7 @@ import io
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
-from flask import Blueprint, request, render_template, send_from_directory, current_app #, Response
+from flask import Blueprint, jsonify, request, render_template, send_from_directory, current_app #, Response
 
 bp = Blueprint('image', __name__, url_prefix='/image')
 

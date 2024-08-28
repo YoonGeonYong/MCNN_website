@@ -103,4 +103,6 @@ sudo systemctl status crowded   # 실행중인지 확인
 ```
 
 
-# 시작은 하고 잘 돌고 있는데, 해당 아이피로 웹 소켓 접속 불가함..
+# 할일
+## GCP 사용시, 카메라 사용 불가.. -> https 필요 -> WSGI, CGI 필요
+## image 처리시에 저장하지 않고, plt로 데이터 받아서 하기 (video 전송과 동일한 방식)
